@@ -1,0 +1,43 @@
+﻿version: '3.8'
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo-db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: SusLinks
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: javalin-app
+    restart: unless-stopped
+    environment:
+      PORT: 7000
+      MONGO_URL: mongodb://mongo:27017/SusLinks
+    ports:
+      - "7000:7000"
+    volumes:
+      - app_logs:/app/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+volumes:
+  mongo_data:
+    name: mongo_data
+  app_logs:
+    name: app_logs
+networks:
+  app-network:
+    driver: bridge
